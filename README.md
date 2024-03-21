@@ -4,6 +4,7 @@ Lil Rust project to measure network latencies.
 Run on one server that is the control and another server that is being tuned. Save the data to "control" & "tuned" folders then run the python analyze.py file for comparison.
 
 // =-= Experiments =-= //
+
 // 1. Slow traffic, w/ no data
 // 2. Slow traffic, w/ data
 // 3. Burst traffic, w/ no data
