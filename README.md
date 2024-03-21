@@ -7,12 +7,12 @@ Run on one server that is the control and another server that is being tuned. Sa
 
 // 1. Slow traffic, w/ no data\
 // 2. Slow traffic, w/ data\
-// 3. Burst traffic, w/ no data\
-// 4. Burst traffic, w/ data\
-// 5. Consistent traffic, w/ no data\
-// 6. Consistent traffic, w/ data\
-// 7. Slow traffic, w/ large data\
-// 8. Burst traffic, w/ large data\
+// 3. Slow traffic, w/ large data\
+// 4. Burst traffic, w/ no data\
+// 5. Burst traffic, w/ data\
+// 6. Burst traffic, w/ large data\
+// 7. Consistent traffic, w/ no data\
+// 8. Consistent traffic, w/ data\
 // 9. Consistent traffic, w/ large data\
 // =---------------------------------------------------------= //\
 // =-= Latencies =-= //\
