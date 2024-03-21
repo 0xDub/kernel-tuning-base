@@ -1,7 +1,7 @@
 # kernel-tuning-base
 Lil Rust project to measure network latencies. 
 
-Run on one server that is the control and another server that is being tuned. Save the data to "control" & "tuned" folders then run the python analyze.py file for comparison.
+Run on one server that is the control and another server that is being tuned. Save the data in "latency" to "control" & "tuned" folders then run the python analyze.py file for comparison.
 
 // =-= Experiments =-= //
 
