@@ -414,7 +414,7 @@ fn main() {
                     // sleep for 5 seconds
                     tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 
-                    println!("[Tokio] Connecting to Server");
+                    println!("[Client] Connecting to Server");
                     let mut stream = tokio::net::TcpStream::connect(format!("{}:{}", server_url, server_port)).await.expect("connect");
                     
 
