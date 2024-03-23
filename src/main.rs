@@ -4,45 +4,8 @@ use rand::RngCore;
 use serde::{Serialize, Deserialize};
 use std::fs::OpenOptions;
 use std::io::{self, Write};
-use std::collections::HashMap;
+use tokio::io::BufReader;
 
-
-
-
-#[derive(Debug, Clone)]
-pub enum CL {
-    Pink,
-    Purple,
-    Green,
-    DullGreen,
-    Blue,
-    DullRed,
-    Red,
-    Orange,
-    Teal,
-    DullTeal,
-    Dull,
-    End,
-}
-
-impl ToString for CL {
-    fn to_string(&self) -> String {
-        match self {
-            CL::Pink => "\x1b[38;5;201m".to_string(),
-            CL::Purple => "\x1b[38;5;135m".to_string(),
-            CL::Green => "\x1b[38;5;46m".to_string(),
-            CL::DullGreen => "\x1b[38;5;29m".to_string(),
-            CL::Blue => "\x1b[38;5;27m".to_string(),
-            CL::DullRed => "\x1b[38;5;124m".to_string(),
-            CL::Red => "\x1b[38;5;196m".to_string(),
-            CL::Orange => "\x1b[38;5;208m".to_string(),
-            CL::Teal => "\x1b[38;5;14m".to_string(),
-            CL::DullTeal => "\x1b[38;5;153m".to_string(),
-            CL::Dull => "\x1b[38;5;8m".to_string(),
-            CL::End => "\x1b[37m".to_string(),
-        }
-    }
-}
 
 // =-= FileHandler =-= //
 pub struct FileHandler {
@@ -65,9 +28,9 @@ impl FileHandler {
 }
 
 
+// =-= ExperimentID =-= //
 
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExperimentID {
     SlowNoData,
     SlowWithData,
@@ -80,22 +43,8 @@ pub enum ExperimentID {
     ConsistentLargeData,
 }
 
-impl ToString for ExperimentID {
-    fn to_string(&self) -> String {
-        match self {
-            ExperimentID::SlowNoData => "SlowNoData".to_string(),
-            ExperimentID::SlowWithData => "SlowWithData".to_string(),
-            ExperimentID::BurstNoData => "BurstNoData".to_string(),
-            ExperimentID::BurstWithData => "BurstWithData".to_string(),
-            ExperimentID::ConsistentNoData => "ConsistentNoData".to_string(),
-            ExperimentID::ConsistentWithData => "ConsistentWithData".to_string(),
-            ExperimentID::SlowLargeData => "SlowLargeData".to_string(),
-            ExperimentID::BurstLargeData => "BurstLargeData".to_string(),
-            ExperimentID::ConsistentLargeData => "ConsistentLargeData".to_string(),
-        }
-    }
-}
 
+// =-= WSData =-= //
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WSData {
@@ -105,8 +54,10 @@ pub struct WSData {
 }
 
 
+// =-= Main =-= //
 
 fn main() {
+
     // Client and Server
     // Client will be generic std::net::TcpStream
     // Server will be generic std::net::TcpListener
@@ -131,245 +82,202 @@ fn main() {
                 .enable_all()
                 .worker_threads(1)
                 .build()
-                .expect("build runtime");
+                .expect("[!][Server] Failed to build tokio runtime");
             let local = tokio::task::LocalSet::new();
             local.block_on(&rt, async {
-                let mut handles = Vec::new();
+                use tokio::io::AsyncWriteExt;
 
-                let handle_1 = tokio::task::spawn_local(async move {
-                    use tokio::io::AsyncWriteExt;
-
-                    let server_url = "127.0.0.1";
-                    let server_port = 7200;
-
-                    let listener = tokio::net::TcpListener::bind(format!("{}:{}", server_url, server_port)).await.expect("bind");
-                    println!("[+] Server listening on: {}", server_port);
-                    loop {
-                        let (mut stream, _) = listener.accept().await.expect("accept");
-
-                        // =-= Experiments =-= //
-                        // 1. Slow traffic, w/ no data
-                        // 2. Slow traffic, w/ data
-                        // 3. Burst traffic, w/ no data
-                        // 4. Burst traffic, w/ data
-                        // 5. Consistent traffic, w/ no data
-                        // 6. Consistent traffic, w/ data
-                        // 7. Slow traffic, w/ large data
-                        // 8. Burst traffic, w/ large data
-                        // 9. Consistent traffic, w/ large data
-                        // =---------------------------------------------------------= //
-                        // =-= Latencies =-= //
-                        // 50us = burst
-                        // 15ms = consistent
-                        // 50ms = slow
-                        // =-= Message Sizes =-= //
-                        // No Data: 0KB
-                        // w/ Data: 32bytes
-                        // Large Data: 256bytes
-                        // =-= Message Format =-= //
-                        // ExperimentID, Timestamp, Data
-                        // =---------------------------------------------------------= //
-                        // =-= Buffers =-= //
-
-                        let mut rng = thread_rng();
-                        let mut small_buffer = [0u8; 32]; // Allocate a 1KB buffer
-                        rng.fill_bytes(&mut small_buffer); // Fill the buffer with random bytes
+                // =---------------------------------------------------------= //
+                // =-= TcpListener =-= //
 
 
-                        let mut rng = thread_rng();
-                        let mut medium_buffer = [0u8; 128]; // Allocate a 10KB buffer
-                        rng.fill_bytes(&mut medium_buffer); // Fill the buffer with random bytes
+                let server_url = "127.0.0.1";
+                let server_port = 7200;
+
+                let listener = tokio::net::TcpListener::bind(format!("{}:{}", server_url, server_port)).await.expect("[!][Server] Failed to bind to ip:port");
+                println!("[+][Server] Listening on: {}", server_port);
+
+                // only accepting one connection so no need to loop
+                let (mut stream, _) = listener.accept().await.expect("[!][Server] Failed to accept connection");
 
 
-                        let mut rng = thread_rng();
-                        let mut large_buffer = [0u8; 256]; // Allocate a 100KB buffer
-                        rng.fill_bytes(&mut large_buffer); // Fill the buffer with random bytes
+                // =---------------------------------------------------------= //
+                // =-= Buffers =-= //
 
-                        // =---------------------------------------------------------= //
-                        // There is a lot of inherent fixed latency from serializing and sending the data,
-                        // the main measurement tho is the relative change which this setup should be able to capture fairly well
+                let mut rng: rand::rngs::ThreadRng = thread_rng(); // Random number generator
+                
+                let mut small_buffer: [u8; 32] = [0u8; 32]; // 32 bytes (w/ Data)
+                rng.fill_bytes(&mut small_buffer); // Fill the buffer with random bytes
 
-                        
+                let mut large_buffer: [u8; 256] = [0u8; 256]; // 256 bytes (Large Data)
+                rng.fill_bytes(&mut large_buffer); // Fill the buffer with random bytes
 
-                        println!("[+] Sending SlowNoData");
-                        // 1.Slow traffic, w/ no data
-                        for _ in 0..2000 {
-                            let mut send_data = WSData {
-                                experiment_id: ExperimentID::SlowNoData,
-                                timestamp: 0,
-                                data: [].to_vec(),
-                            };
-                            send_data.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
 
-                            // json serialize the data
-                            let data = serde_json::to_string(&send_data).expect("serialize");
-                            let data = format!("{}\0", data);
-                            let bytes = data.as_bytes();
+                // =---------------------------------------------------------= //
+                // Let's begin!
 
-                            stream.write_all(bytes).await.expect("write");
-                            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-                        }
+                let slow_sample_size: i32 = 2000;
+                let burst_sample_size: i32 = 15000;
+                let consistent_sample_size: i32 = 6000;
+                
 
-                        println!("[+] Sending SlowWithData");
-                        // 2.Slow traffic, w/ data
-                        for _ in 0..2000 {
-                            let mut send_data = WSData {
-                                experiment_id: ExperimentID::SlowWithData,
-                                timestamp: 0,
-                                data: small_buffer.to_vec(),
-                            };
-                            send_data.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+                // =-= Slow Traffic =-= //
 
-                            // json serialize the data
-                            let data = serde_json::to_string(&send_data).expect("serialize");
-                            let data = format!("{}\0", data);
-                            let bytes = data.as_bytes();
+                println!("[+][Server] Sending SlowNoData");
+                // Slow traffic, w/ no data
+                for _ in 0..slow_sample_size {
+                    let send_data = WSData {
+                        experiment_id: ExperimentID::SlowNoData,
+                        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+                        data: vec![],
+                    };
 
-                            stream.write_all(bytes).await.expect("write");
-                            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-                        }
+                    let mut bytes = serde_json::to_vec(&send_data).expect("[!][Server] Error serializing data");
+                    bytes.push(0);
 
-                        println!("[+] Sending BurstNoData");
-                        // 3.Burst traffic, w/ no data
-                        for _ in 0..15000 {
-                            let mut send_data = WSData {
-                                experiment_id: ExperimentID::BurstNoData,
-                                timestamp: 0,
-                                data: [].to_vec(),
-                            };
-                            send_data.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-
-                            // json serialize the data
-                            let data = serde_json::to_string(&send_data).expect("serialize");
-                            let data = format!("{}\0", data);
-                            let bytes = data.as_bytes();
-
-                            stream.write_all(bytes).await.expect("write");
-                            tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
-                        }
-
-                        println!("[+] Sending BurstWithData");
-                        // 4.Burst traffic, w/ data
-                        for _ in 0..15000 {
-                            let mut send_data = WSData {
-                                experiment_id: ExperimentID::BurstWithData,
-                                timestamp: 0,
-                                data: small_buffer.to_vec(),
-                            };
-                            send_data.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-
-                            // json serialize the data
-                            let data = serde_json::to_string(&send_data).expect("serialize");
-                            let data = format!("{}\0", data);
-                            let bytes = data.as_bytes();
-
-                            stream.write_all(bytes).await.expect("write");
-                            tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
-                        }
-
-                        println!("[+] Sending ConsistentNoData");
-                        // 5.Consistent traffic, w/ no data
-                        for _ in 0..6000 {
-                            let mut send_data = WSData {
-                                experiment_id: ExperimentID::ConsistentNoData,
-                                timestamp: 0,
-                                data: [].to_vec(),
-                            };
-                            send_data.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-
-                            // json serialize the data
-                            let data = serde_json::to_string(&send_data).expect("serialize");
-                            let data = format!("{}\0", data);
-                            let bytes = data.as_bytes();
-
-                            stream.write_all(bytes).await.expect("write");
-                            tokio::time::sleep(tokio::time::Duration::from_millis(15)).await;
-                        }
-
-                        println!("[+] Sending ConsistentWithData");
-                        // 6.Consistent traffic, w/ data
-                        for _ in 0..6000 {
-                            let mut send_data = WSData {
-                                experiment_id: ExperimentID::ConsistentWithData,
-                                timestamp: 0,
-                                data: small_buffer.to_vec(),
-                            };
-                            send_data.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-
-                            // json serialize the data
-                            let data = serde_json::to_string(&send_data).expect("serialize");
-                            let data = format!("{}\0", data);
-                            let bytes = data.as_bytes();
-
-                            stream.write_all(bytes).await.expect("write");
-                            tokio::time::sleep(tokio::time::Duration::from_millis(15)).await;
-                        }
-
-                        println!("[+] Sending SlowLargeData");
-                        // 7.Slow traffic, w/ large data
-                        for _ in 0..2000 {
-                            let mut send_data = WSData {
-                                experiment_id: ExperimentID::SlowLargeData,
-                                timestamp: 0,
-                                data: large_buffer.to_vec(),
-                            };
-                            send_data.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-
-                            // json serialize the data
-                            let data = serde_json::to_string(&send_data).expect("serialize");
-                            let data = format!("{}\0", data);
-                            let bytes = data.as_bytes();
-
-                            stream.write_all(bytes).await.expect("write");
-                            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-                        }
-
-                        println!("[+] Sending ConsistentLargeData");
-                        // 8.Consistent traffic, w/ large data
-                        for _ in 0..6000 {
-                            let mut send_data = WSData {
-                                experiment_id: ExperimentID::ConsistentLargeData,
-                                timestamp: 0,
-                                data: large_buffer.to_vec(),
-                            };
-                            send_data.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-
-                            // json serialize the data
-                            let data = serde_json::to_string(&send_data).expect("serialize");
-                            let data = format!("{}\0", data);
-                            let bytes = data.as_bytes();
-
-                            stream.write_all(bytes).await.expect("write");
-                            tokio::time::sleep(tokio::time::Duration::from_millis(15)).await;
-                        }
-
-                        println!("[+] Sending BurstLargeData");
-                        // 9.Burst traffic, w/ small data
-                        for _ in 0..15000 {
-                            let mut send_data = WSData {
-                                experiment_id: ExperimentID::BurstLargeData,
-                                timestamp: 0,
-                                data: large_buffer.to_vec(),
-                            };
-                            send_data.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-
-                            // json serialize the data
-                            let data = serde_json::to_string(&send_data).expect("serialize");
-                            let data = format!("{}\0", data);
-                            let bytes = data.as_bytes();
-
-                            stream.write_all(bytes).await.expect("write");
-                            tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
-                        }
-
-                        println!("[+] All Experiments Complete");
-                    }
-                });
-                handles.push(handle_1);
-
-                for handle in handles {
-                    handle.await.expect("join handle");
+                    stream.write_all(&bytes).await.expect("[!][Server] Failed to write to stream");
+                    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
                 }
+
+                println!("[+][Server] Sending SlowWithData");
+                // Slow traffic, w/ data
+                for _ in 0..slow_sample_size {
+                    let send_data = WSData {
+                        experiment_id: ExperimentID::SlowWithData,
+                        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+                        data: small_buffer.to_vec(),
+                    };
+
+                    let mut bytes = serde_json::to_vec(&send_data).expect("[!][Server] Error serializing data");
+                    bytes.push(0);
+
+                    stream.write_all(&bytes).await.expect("[!][Server] Failed to write to stream");
+                    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+                }
+
+                println!("[+][Server] Sending SlowLargeData");
+                // Slow traffic, w/ large data
+                for _ in 0..slow_sample_size {
+                    let send_data = WSData {
+                        experiment_id: ExperimentID::SlowLargeData,
+                        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+                        data: large_buffer.to_vec(),
+                    };
+
+                    let mut bytes = serde_json::to_vec(&send_data).expect("[!][Server] Error serializing data");
+                    bytes.push(0);
+
+                    stream.write_all(&bytes).await.expect("[!][Server] Failed to write to stream");
+                    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+                }
+
+
+                // =-= Burst Traffic =-= //
+
+                println!("[+][Server] Sending BurstNoData");
+                // Burst traffic, w/ no data
+                for _ in 0..burst_sample_size {
+                    let send_data = WSData {
+                        experiment_id: ExperimentID::BurstNoData,
+                        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+                        data: vec![],
+                    };
+
+                    let mut bytes = serde_json::to_vec(&send_data).expect("[!][Server] Error serializing data");
+                    bytes.push(0);
+
+                    stream.write_all(&bytes).await.expect("[!][Server] Failed to write to stream");
+                    tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
+                }
+
+                println!("[+][Server] Sending BurstWithData");
+                // Burst traffic, w/ data
+                for _ in 0..burst_sample_size {
+                    let send_data = WSData {
+                        experiment_id: ExperimentID::BurstWithData,
+                        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+                        data: small_buffer.to_vec(),
+                    };
+
+                    let mut bytes = serde_json::to_vec(&send_data).expect("[!][Server] Error serializing data");
+                    bytes.push(0);
+
+                    stream.write_all(&bytes).await.expect("[!][Server] Failed to write to stream");
+                    tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
+                }
+
+                println!("[+][Server] Sending BurstLargeData");
+                // Burst traffic, w/ large data
+                for _ in 0..burst_sample_size {
+                    let send_data = WSData {
+                        experiment_id: ExperimentID::BurstLargeData,
+                        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+                        data: large_buffer.to_vec(),
+                    };
+
+                    let mut bytes = serde_json::to_vec(&send_data).expect("[!][Server] Error serializing data");
+                    bytes.push(0);
+
+                    stream.write_all(&bytes).await.expect("[!][Server] Failed to write to stream");
+                    tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
+                }
+
+
+                // =-= Consistent Traffic =-= //
+
+                println!("[+][Server] Sending ConsistentNoData");
+                // Consistent traffic, w/ no data
+                for _ in 0..consistent_sample_size {
+                    let send_data = WSData {
+                        experiment_id: ExperimentID::ConsistentNoData,
+                        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+                        data: vec![],
+                    };
+
+                    let mut bytes = serde_json::to_vec(&send_data).expect("[!][Server] Error serializing data");
+                    bytes.push(0);
+
+                    stream.write_all(&bytes).await.expect("[!][Server] Failed to write to stream");
+                    tokio::time::sleep(tokio::time::Duration::from_millis(15)).await;
+                }
+
+                println!("[+][Server] Sending ConsistentWithData");
+                // Consistent traffic, w/ data
+                for _ in 0..consistent_sample_size {
+                    let send_data = WSData {
+                        experiment_id: ExperimentID::ConsistentWithData,
+                        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+                        data: small_buffer.to_vec(),
+                    };
+
+                    let mut bytes = serde_json::to_vec(&send_data).expect("[!][Server] Error serializing data");
+                    bytes.push(0);
+
+                    stream.write_all(&bytes).await.expect("[!][Server] Failed to write to stream");
+                    tokio::time::sleep(tokio::time::Duration::from_millis(15)).await;
+                }
+
+                
+
+                println!("[+][Server] Sending ConsistentLargeData");
+                // Consistent traffic, w/ large data
+                for _ in 0..consistent_sample_size {
+                    let send_data = WSData {
+                        experiment_id: ExperimentID::ConsistentLargeData,
+                        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+                        data: large_buffer.to_vec(),
+                    };
+
+                    let mut bytes = serde_json::to_vec(&send_data).expect("[!][Server] Error serializing data");
+                    bytes.push(0);
+
+                    stream.write_all(&bytes).await.expect("[!][Server] Failed to write to stream");
+                    tokio::time::sleep(tokio::time::Duration::from_millis(15)).await;
+                }
+
+                
+
+                println!("[+][Server] All Experiments Complete");
             });
         }
     });
@@ -386,67 +294,62 @@ fn main() {
                 .enable_all()
                 .worker_threads(1)
                 .build()
-                .expect("build runtime");
+                .expect("[!][Client] Failed to build tokio runtime");
             let local = tokio::task::LocalSet::new();
             local.block_on(&rt, async {
-                let mut handles = Vec::new();
-                let handle_1 = tokio::task::spawn_local(async move {
-                    use tokio::io::AsyncReadExt;
+                use tokio::io::AsyncBufReadExt;
+                
+                let mut slow_no_data_file = FileHandler::new(&format!("latency/SlowNoData.txt")).unwrap();
+                let mut slow_with_data_file = FileHandler::new(&format!("latency/SlowWithData.txt")).unwrap();
+                let mut burst_no_data_file = FileHandler::new(&format!("latency/BurstNoData.txt")).unwrap();
+                let mut burst_with_data_file = FileHandler::new(&format!("latency/BurstWithData.txt")).unwrap();
+                let mut consistent_no_data_file = FileHandler::new(&format!("latency/ConsistentNoData.txt")).unwrap();
+                let mut consistent_with_data_file = FileHandler::new(&format!("latency/ConsistentWithData.txt")).unwrap();
+                let mut slow_large_data_file = FileHandler::new(&format!("latency/SlowLargeData.txt")).unwrap();
+                let mut burst_large_data_file = FileHandler::new(&format!("latency/BurstLargeData.txt")).unwrap();
+                let mut consistent_large_data_file = FileHandler::new(&format!("latency/ConsistentLargeData.txt")).unwrap();
 
+                let server_url = "127.0.0.1";
+                let server_port = 7200;
 
-                    let mut files: HashMap<ExperimentID, FileHandler> = HashMap::new();
-                    files.insert(ExperimentID::SlowNoData, FileHandler::new(&format!("latency/SlowNoData.txt")).unwrap());
-                    files.insert(ExperimentID::SlowWithData, FileHandler::new(&format!("latency/SlowWithData.txt")).unwrap());
-                    files.insert(ExperimentID::BurstNoData, FileHandler::new(&format!("latency/BurstNoData.txt")).unwrap());
-                    files.insert(ExperimentID::BurstWithData, FileHandler::new(&format!("latency/BurstWithData.txt")).unwrap());
-                    files.insert(ExperimentID::ConsistentNoData, FileHandler::new(&format!("latency/ConsistentNoData.txt")).unwrap());
-                    files.insert(ExperimentID::ConsistentWithData, FileHandler::new(&format!("latency/ConsistentWithData.txt")).unwrap());
-                    files.insert(ExperimentID::SlowLargeData, FileHandler::new(&format!("latency/SlowLargeData.txt")).unwrap());
-                    files.insert(ExperimentID::BurstLargeData, FileHandler::new(&format!("latency/BurstLargeData.txt")).unwrap());
-                    files.insert(ExperimentID::ConsistentLargeData, FileHandler::new(&format!("latency/ConsistentLargeData.txt")).unwrap());
-                    
+                // sleep for 2 seconds incase server is not ready
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
+                println!("[+][Client] Connecting to Server");
+                let stream = tokio::net::TcpStream::connect(format!("{}:{}", server_url, server_port)).await.expect("[!][Client] Failed to connect to the server");
+                let mut stream = BufReader::new(stream);
+                println!("[+][Client] Connected & ready to receive data");
 
+                let mut payload = Vec::new();
+                loop {
+                    payload.clear();
+                    stream.read_until(0, &mut payload).await.expect("[!][Client] Failed to read data"); // read until the appended null byte
 
-                    let server_url = "127.0.0.1";
-                    let server_port = 7200;
-
-                    // sleep for 5 seconds
-                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-
-                    println!("[Client] Connecting to Server");
-                    let mut stream = tokio::net::TcpStream::connect(format!("{}:{}", server_url, server_port)).await.expect("connect");
-                    
-
-                    // *definitely* better way to handle the payload and reading the incoming bytes but this is just for testing
-                    let mut payload = Vec::new();
-                    loop {
-                        let mut buffer = [0; 8192];
-                        let bytes_read = stream.read(&mut buffer).await.unwrap();
-                        if bytes_read == 0 {
-                            break;
-                        }
-
-                        for i in 0..bytes_read {
-                            let byte = buffer[i];
-                            if byte == 0 {
-                                let stringed_payload = String::from_utf8(payload.clone()).expect("parse");
-                                let ws_data = serde_json::from_str::<WSData>(&stringed_payload).expect("deserialize");
-                                let latency = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos() - ws_data.timestamp;
-                                //println!("Latency: {}ns", latency);
-                                //println!("Data: {:?}", ws_data);
-                                files.get_mut(&ws_data.experiment_id).unwrap().write_line(format!("{}", latency)).unwrap();
-                                payload.clear();
-                            } else {
-                                payload.push(byte);
-                            }
-                        }
-
+                    if payload.is_empty() {
+                        break;
                     }
-                });
-                handles.push(handle_1);
-                for handle in handles {
-                    handle.await.expect("join handle");
+
+                    // Remove the null byte from the end of the payload
+                    payload.pop();
+
+                    // Deserialize and process the payload
+                    let ws_data = serde_json::from_slice::<WSData>(&payload).expect("[!][Client] Failed to deserialize data");
+                    let latency = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos() - ws_data.timestamp;
+                    println!("Latency: {}ns", latency);
+                    println!("Data: {:?}", ws_data);
+
+                    match ws_data.experiment_id {
+                        ExperimentID::SlowNoData => slow_no_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
+                        ExperimentID::SlowWithData => slow_with_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
+                        ExperimentID::BurstNoData => burst_no_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
+                        ExperimentID::BurstWithData => burst_with_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
+                        ExperimentID::ConsistentNoData => consistent_no_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
+                        ExperimentID::ConsistentWithData => consistent_with_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
+                        ExperimentID::SlowLargeData => slow_large_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
+                        ExperimentID::BurstLargeData => burst_large_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
+                        ExperimentID::ConsistentLargeData => consistent_large_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
+                    }
+
                 }
             });
         }
