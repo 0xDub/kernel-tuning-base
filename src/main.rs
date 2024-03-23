@@ -335,8 +335,8 @@ fn main() {
                     // Deserialize and process the payload
                     let ws_data = serde_json::from_slice::<WSData>(&payload).expect("[!][Client] Failed to deserialize data");
                     let latency = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos() - ws_data.timestamp;
-                    println!("Latency: {}ns", latency);
-                    println!("Data: {:?}", ws_data);
+                    //println!("Latency: {}ns", latency);
+                    //println!("Data: {:?}", ws_data);
 
                     match ws_data.experiment_id {
                         ExperimentID::SlowNoData => slow_no_data_file.write_line(latency.to_string()).expect("[!][Client] Failed to write to file"),
