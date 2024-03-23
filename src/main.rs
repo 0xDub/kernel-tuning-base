@@ -123,7 +123,7 @@ fn main() {
 
                 // =-= Slow Traffic =-= //
 
-                println!("[+][Server] Sending SlowNoData");
+                println!("[-][Server] Sending SlowNoData");
                 // Slow traffic, w/ no data
                 for _ in 0..slow_sample_size {
                     let send_data = WSData {
@@ -139,7 +139,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
                 }
 
-                println!("[+][Server] Sending SlowWithData");
+                println!("[-][Server] Sending SlowWithData");
                 // Slow traffic, w/ data
                 for _ in 0..slow_sample_size {
                     let send_data = WSData {
@@ -155,7 +155,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
                 }
 
-                println!("[+][Server] Sending SlowLargeData");
+                println!("[-][Server] Sending SlowLargeData");
                 // Slow traffic, w/ large data
                 for _ in 0..slow_sample_size {
                     let send_data = WSData {
@@ -174,7 +174,7 @@ fn main() {
 
                 // =-= Burst Traffic =-= //
 
-                println!("[+][Server] Sending BurstNoData");
+                println!("[-][Server] Sending BurstNoData");
                 // Burst traffic, w/ no data
                 for _ in 0..burst_sample_size {
                     let send_data = WSData {
@@ -190,7 +190,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
                 }
 
-                println!("[+][Server] Sending BurstWithData");
+                println!("[-][Server] Sending BurstWithData");
                 // Burst traffic, w/ data
                 for _ in 0..burst_sample_size {
                     let send_data = WSData {
@@ -206,7 +206,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
                 }
 
-                println!("[+][Server] Sending BurstLargeData");
+                println!("[-][Server] Sending BurstLargeData");
                 // Burst traffic, w/ large data
                 for _ in 0..burst_sample_size {
                     let send_data = WSData {
@@ -225,7 +225,7 @@ fn main() {
 
                 // =-= Consistent Traffic =-= //
 
-                println!("[+][Server] Sending ConsistentNoData");
+                println!("[-][Server] Sending ConsistentNoData");
                 // Consistent traffic, w/ no data
                 for _ in 0..consistent_sample_size {
                     let send_data = WSData {
@@ -241,7 +241,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_millis(15)).await;
                 }
 
-                println!("[+][Server] Sending ConsistentWithData");
+                println!("[-][Server] Sending ConsistentWithData");
                 // Consistent traffic, w/ data
                 for _ in 0..consistent_sample_size {
                     let send_data = WSData {
@@ -259,7 +259,7 @@ fn main() {
 
                 
 
-                println!("[+][Server] Sending ConsistentLargeData");
+                println!("[-][Server] Sending ConsistentLargeData");
                 // Consistent traffic, w/ large data
                 for _ in 0..consistent_sample_size {
                     let send_data = WSData {
