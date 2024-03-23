@@ -152,9 +152,9 @@ fn main() {
                 // =---------------------------------------------------------= //
                 // Let's begin!
 
-                let slow_sample_size: i32 = 2; //2000;
-                let burst_sample_size: i32 = 15; //15000;
-                let consistent_sample_size: i32 = 6; //6000;
+                let slow_sample_size: i32 = 2000;
+                let burst_sample_size: i32 = 15000;
+                let consistent_sample_size: i32 = 6000;
                 
 
                 // =-= Slow Traffic =-= //
