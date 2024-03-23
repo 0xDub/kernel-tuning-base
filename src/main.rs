@@ -7,6 +7,42 @@ use std::io::{self, Write};
 use tokio::io::BufReader;
 
 
+// =-= Text Coloring =-= //
+#[derive(Debug, Clone)]
+pub enum CL {
+    Pink,
+    Purple,
+    Green,
+    DullGreen,
+    Blue,
+    DullRed,
+    Red,
+    Orange,
+    Teal,
+    DullTeal,
+    Dull,
+    End,
+}
+
+impl ToString for CL {
+    fn to_string(&self) -> String {
+        match self {
+            CL::Pink => "\x1b[38;5;201m".to_string(),
+            CL::Purple => "\x1b[38;5;135m".to_string(),
+            CL::Green => "\x1b[38;5;46m".to_string(),
+            CL::DullGreen => "\x1b[38;5;29m".to_string(),
+            CL::Blue => "\x1b[38;5;27m".to_string(),
+            CL::DullRed => "\x1b[38;5;124m".to_string(),
+            CL::Red => "\x1b[38;5;196m".to_string(),
+            CL::Orange => "\x1b[38;5;208m".to_string(),
+            CL::Teal => "\x1b[38;5;14m".to_string(),
+            CL::DullTeal => "\x1b[38;5;153m".to_string(),
+            CL::Dull => "\x1b[38;5;8m".to_string(),
+            CL::End => "\x1b[37m".to_string(),
+        }
+    }
+}
+
 // =-= FileHandler =-= //
 pub struct FileHandler {
     file: std::fs::File,
@@ -95,7 +131,7 @@ fn main() {
                 let server_port = 7200;
 
                 let listener = tokio::net::TcpListener::bind(format!("{}:{}", server_url, server_port)).await.expect("[!][Server] Failed to bind to ip:port");
-                println!("[+][Server] Listening on: {}", server_port);
+                println!("{}[+][Server] Listening on: {}{}", CL::DullTeal.to_string(), server_port, CL::End.to_string());
 
                 // only accepting one connection so no need to loop
                 let (mut stream, _) = listener.accept().await.expect("[!][Server] Failed to accept connection");
@@ -116,14 +152,14 @@ fn main() {
                 // =---------------------------------------------------------= //
                 // Let's begin!
 
-                let slow_sample_size: i32 = 2000;
-                let burst_sample_size: i32 = 15000;
-                let consistent_sample_size: i32 = 6000;
+                let slow_sample_size: i32 = 2; //2000;
+                let burst_sample_size: i32 = 15; //15000;
+                let consistent_sample_size: i32 = 6; //6000;
                 
 
                 // =-= Slow Traffic =-= //
 
-                println!("[-][Server] Sending SlowNoData");
+                println!("{}[-][Server] Sending SlowNoData{}", CL::Dull.to_string(), CL::End.to_string());
                 // Slow traffic, w/ no data
                 for _ in 0..slow_sample_size {
                     let send_data = WSData {
@@ -139,7 +175,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
                 }
 
-                println!("[-][Server] Sending SlowWithData");
+                println!("{}[-][Server] Sending SlowWithData{}", CL::Dull.to_string(), CL::End.to_string());
                 // Slow traffic, w/ data
                 for _ in 0..slow_sample_size {
                     let send_data = WSData {
@@ -155,7 +191,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
                 }
 
-                println!("[-][Server] Sending SlowLargeData");
+                println!("{}[-][Server] Sending SlowLargeData{}", CL::Dull.to_string(), CL::End.to_string());
                 // Slow traffic, w/ large data
                 for _ in 0..slow_sample_size {
                     let send_data = WSData {
@@ -174,7 +210,7 @@ fn main() {
 
                 // =-= Burst Traffic =-= //
 
-                println!("[-][Server] Sending BurstNoData");
+                println!("{}[-][Server] Sending BurstNoData{}", CL::Dull.to_string(), CL::End.to_string());
                 // Burst traffic, w/ no data
                 for _ in 0..burst_sample_size {
                     let send_data = WSData {
@@ -190,7 +226,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
                 }
 
-                println!("[-][Server] Sending BurstWithData");
+                println!("{}[-][Server] Sending BurstWithData{}", CL::Dull.to_string(), CL::End.to_string());
                 // Burst traffic, w/ data
                 for _ in 0..burst_sample_size {
                     let send_data = WSData {
@@ -206,7 +242,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_micros(50)).await;
                 }
 
-                println!("[-][Server] Sending BurstLargeData");
+                println!("{}[-][Server] Sending BurstLargeData{}", CL::Dull.to_string(), CL::End.to_string());
                 // Burst traffic, w/ large data
                 for _ in 0..burst_sample_size {
                     let send_data = WSData {
@@ -225,7 +261,7 @@ fn main() {
 
                 // =-= Consistent Traffic =-= //
 
-                println!("[-][Server] Sending ConsistentNoData");
+                println!("{}[-][Server] Sending ConsistentNoData{}", CL::Dull.to_string(), CL::End.to_string());
                 // Consistent traffic, w/ no data
                 for _ in 0..consistent_sample_size {
                     let send_data = WSData {
@@ -241,7 +277,7 @@ fn main() {
                     tokio::time::sleep(tokio::time::Duration::from_millis(15)).await;
                 }
 
-                println!("[-][Server] Sending ConsistentWithData");
+                println!("{}[-][Server] Sending ConsistentWithData{}", CL::Dull.to_string(), CL::End.to_string());
                 // Consistent traffic, w/ data
                 for _ in 0..consistent_sample_size {
                     let send_data = WSData {
@@ -259,7 +295,7 @@ fn main() {
 
                 
 
-                println!("[-][Server] Sending ConsistentLargeData");
+                println!("{}[-][Server] Sending ConsistentLargeData{}", CL::Dull.to_string(), CL::End.to_string());
                 // Consistent traffic, w/ large data
                 for _ in 0..consistent_sample_size {
                     let send_data = WSData {
@@ -277,7 +313,7 @@ fn main() {
 
                 
 
-                println!("[+][Server] All Experiments Complete");
+                println!("{}[+][Server] All Experiments Complete{}", CL::Green.to_string(), CL::End.to_string());
             });
         }
     });
@@ -315,10 +351,10 @@ fn main() {
                 // sleep for 2 seconds incase server is not ready
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-                println!("[+][Client] Connecting to Server");
+                println!("{}[-][Client] Connecting to Server{}", CL::Dull.to_string(), CL::End.to_string());
                 let stream = tokio::net::TcpStream::connect(format!("{}:{}", server_url, server_port)).await.expect("[!][Client] Failed to connect to the server");
                 let mut stream = BufReader::new(stream);
-                println!("[+][Client] Connected & ready to receive data");
+                println!("{}[+][Client] Connected & ready to receive data{}", CL::DullTeal.to_string(), CL::End.to_string());
 
                 let mut payload = Vec::new();
                 loop {

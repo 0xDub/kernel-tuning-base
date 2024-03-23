@@ -29,7 +29,7 @@ def analyze():
     aggregate_data = pd.DataFrame(columns=["method", "latency"])
 
     print()
-    print(bcolors.HEADER + "=-= Kernel Tuning | Latency Stats (us) =-=" + bcolors.ENDC)
+    print(bcolors.HEADER + "=-=-= Kernel Tuning | Latency Stats (us) =-=-=" + bcolors.ENDC)
 
     fig, comp_ax = plt.subplots(1)
     comp_ax.set_title("Kernel Tuning | Latency Distribution")
@@ -77,13 +77,14 @@ def analyze():
         tuned_mean_perf = round((tuned_mean / control_mean) * 100 - 100)
         tuned_std_perf = round((tuned_std / control_std) * 100 - 100)
 
-        print(f"{method} | Tuned | Mean: {tuned_mean} | Std: {tuned_std}")
-        print(f"{method} | Control | Mean: {control_mean} | Std: {control_std}")
-        print(bcolors.OKCYAN + f"{method} | Performance | Mean: {tuned_mean_perf}% | Std: {tuned_std_perf}%" + bcolors.ENDC)
+        print(f"=---------= {method} =---------=")
+        print(f"Tuned       | Mean: {tuned_mean} | Std: {tuned_std}")
+        print(f"Control     | Mean: {control_mean} | Std: {control_std}")
+        print(bcolors.OKCYAN + f"Performance | Mean: {tuned_mean_perf}% | Std: {tuned_std_perf}%" + bcolors.ENDC)
         print()
 
         if method == "ConsistentNoData" or method == "ConsistentWithData" or method == "ConsistentLargeData":
-            print("=----------------------=")
+            print(bcolors.HEADER + "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" + bcolors.ENDC)
             print()
         
 
