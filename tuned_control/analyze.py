@@ -20,7 +20,8 @@ class bcolors:
 
 
 def analyze():
-    threshold = 300000000000
+    threshold = 300 # in microseconds
+
 
     available_colors = ["#21fced", "#21fc80", "#fc2130", "#219efc", "#ed21fc", "#8021fc", "#30fc21", "#fc8021", "#FFFF00", "#FDECA0", "#FF00FF", "#00FFFF", "#FF0000", "#00FF00", "#0000FF", "#FF8000", "#FF0080", "#80FF00", "#80FF00", "#0080FF", "#8000FF", "#FF8080", "#80FF80", "#8080FF", "#FF80FF", "#80FFFF", "#FF80FF", "#FFFF80", "#FF8000", "#FF0080", "#80FF00", "#80FF00", "#0080FF", "#8000FF", "#FF8080", "#80FF80", "#8080FF", "#FF80FF", "#80FFFF", "#FF80FF", "#FFFF80", "#FF8000", "#FF0080", "#80FF00", "#80FF00", "#0080FF", "#8000FF", "#FF8080", "#80FF80", "#8080FF", "#FF80FF", "#80FFFF", "#FF80FF", "#FFFF80", "#FF8000", "#FF0080", "#80FF00", "#80FF00", "#0080FF", "#8000FF", "#FF8080", "#80FF80", "#8080FF", "#FF80FF", "#80FFFF", "#FF80FF", "#FFFF80", "#FF8000", "#FF0080", "#80FF00", "#80FF00", "#0080FF", "#8000FF", "#FF8080", "#80FF80", "#8080FF", "#FF80FF", "#80FFFF", "#FF80FF", "#FFFF80", "#FF8000", "#FF0080", "#80FF00", "#80FF00", "#0080FF", "#8000FF", "#FF8080", "#80FF80", "#8080FF", "#FF80FF", "#80FFFF", "#FF80FF", "#FFFF80", "#FF8000", "#FF0080", "#80FF00", "#80FF00", "#0080FF", "#8000FF", "#FF8080", "#80FF80", "#8080FF", "#FF80FF", "#80FFFF", "#FF80FF", "#FFFF80", "#FF8000", "#FF0080", "#80FF00", "#80FF00", "#0080FF", "#8000FF", "#FF8080", "#80FF80", "#8080FF"]
 
@@ -42,10 +43,9 @@ def analyze():
         with open(f"tuned/{method}.txt", "r") as f:
             lines = f.readlines()
             lines = [x.rstrip() for x in lines]
-            lines = [float(x) for x in lines if x != ""]
+            lines = [int(x) for x in lines if x != ""]
         tuned_data = pd.DataFrame(lines, columns=["latency"])
-        tuned_data = tuned_data.astype(int)
-        tuned_data = tuned_data[tuned_data["latency"] < threshold]
+        tuned_data = tuned_data[tuned_data["latency"] < threshold * 1000]
         tuned_data["method"] = method
         tuned_data["server"] = "tuned"
         if len(aggregate_data) == 0:
@@ -57,10 +57,9 @@ def analyze():
         with open(f"control/{method}.txt", "r") as f:
             lines = f.readlines()
             lines = [x.rstrip() for x in lines]
-            lines = [float(x) for x in lines if x != ""]
+            lines = [int(x) for x in lines if x != ""]
         control_data = pd.DataFrame(lines, columns=["latency"])
-        control_data = control_data.astype(int)
-        control_data = control_data[control_data["latency"] < threshold]
+        control_data = control_data[control_data["latency"] < threshold * 1000]
         control_data["method"] = method
         control_data["server"] = "control"
         if len(aggregate_data) == 0:
